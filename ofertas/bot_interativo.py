@@ -45,8 +45,10 @@ async def _cmd_status(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     fontes = [nome for nome, f in (("Mercado Livre", config.fonte_ml),
                                    ("Shopee", config.fonte_shopee),
                                    ("Amazon", config.fonte_amazon)) if f.get("ativa")]
+    hoje = db.postadas_hoje()
+    limite = f"/{config.max_posts_por_dia}" if config.max_posts_por_dia else ""
     await update.message.reply_text(
-        f"📊 {db.total_postadas()} ofertas postadas até agora\n"
+        f"📊 {db.total_postadas()} ofertas postadas até agora ({hoje}{limite} hoje)\n"
         f"🔎 Fontes automáticas: {', '.join(fontes) or 'nenhuma'}\n"
         f"⏱ Ciclo a cada {config.intervalo_minutos} min, "
         f"máx. {config.max_posts_por_ciclo} posts por ciclo\n"

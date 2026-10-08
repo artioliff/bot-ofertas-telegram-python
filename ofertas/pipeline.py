@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import re
 
 from telegram import Bot
 
@@ -9,6 +8,7 @@ from .config import config, dentro_do_horario
 from .models import Oferta
 from .sources import amazon, mercadolivre, shopee
 from .telegram_poster import postar_oferta
+from .utils import chave_similar
 
 log = logging.getLogger("ofertas.pipeline")
 
@@ -54,7 +54,13 @@ def filtrar(ofertas: list[Oferta]) -> list[Oferta]:
             continue
         if db.ja_postada(o.uid, config.nao_repetir_dias):
             continue
+        if config.dedupe_titulos and db.chave_recente(chave_similar(o.titulo),
+                                                       config.dedupe_titulos_dias):
+            continue  # variação (cor, tamanho…) de algo postado há pouco tempo
         if config.desconto_minimo and (o.desconto or 0) < config.desconto_minimo:
+            continue
+        if (config.desconto_minimo_reais and o.preco and o.preco_original
+                and o.preco_original - o.preco < config.desconto_minimo_reais):
             continue
         if o.preco is not None:
             if config.preco_minimo and o.preco < config.preco_minimo:
@@ -68,24 +74,27 @@ def filtrar(ofertas: list[Oferta]) -> list[Oferta]:
     return aprovadas
 
 
-def _chave_similar(titulo: str) -> str:
-    """Variações do mesmo produto (cor, tamanho) costumam repetir as primeiras palavras."""
-    return " ".join(re.findall(r"\w+", titulo.lower())[:5])
+def _chave_ordem(o: Oferta) -> tuple:
+    """Critério de eleição: desconto (%) ou poupança (R$) — ver filtros.ordenar_por."""
+    if config.ordenar_por == "poupanca":
+        return (o.poupanca, o.desconto or 0)
+    return (o.desconto or 0, o.poupanca)
 
 
 def escolher(ofertas: list[Oferta], n: int) -> list[Oferta]:
-    """Top N por desconto, alternando plataformas e pulando variações do mesmo produto."""
+    """Top N (por desconto ou poupança), alternando plataformas
+    e pulando variações do mesmo produto."""
     filas: dict[str, list[Oferta]] = {}
-    for o in sorted(ofertas, key=lambda o: o.desconto or 0, reverse=True):
+    for o in sorted(ofertas, key=_chave_ordem, reverse=True):
         filas.setdefault(o.plataforma, []).append(o)
-    ordem = sorted(filas.values(), key=lambda f: f[0].desconto or 0, reverse=True)
+    ordem = sorted(filas.values(), key=lambda f: _chave_ordem(f[0]), reverse=True)
     escolhidas: list[Oferta] = []
     vistas: set[str] = set()
     while len(escolhidas) < n and any(ordem):
         for fila in ordem:
             while fila:
                 o = fila.pop(0)
-                chave = _chave_similar(o.titulo)
+                chave = chave_similar(o.titulo)
                 if chave not in vistas:
                     vistas.add(chave)
                     escolhidas.append(o)
@@ -111,9 +120,17 @@ async def executar_ciclo(bot: Bot) -> int:
         log.info("Fora do horário ativo (%s) — ciclo pulado", config.horario_ativo)
         return 0
 
+    vagas = config.max_posts_por_ciclo
+    if config.max_posts_por_dia:
+        restam = config.max_posts_por_dia - db.postadas_hoje()
+        if restam <= 0:
+            log.info("Limite diário atingido (%d posts hoje) — ciclo pulado", config.max_posts_por_dia)
+            return 0
+        vagas = min(vagas, restam)
+
     brutas = await asyncio.to_thread(coletar)
     boas = filtrar(brutas)
-    escolhidas = escolher(boas, config.max_posts_por_ciclo)
+    escolhidas = escolher(boas, vagas)
 
     # Mercado Livre: gerar link de afiliado só das escolhidas (linkbuilder é caro)
     ml_pendentes = [o for o in escolhidas if o.plataforma == "mercadolivre" and not o.url_afiliado]

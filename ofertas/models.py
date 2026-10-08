@@ -25,3 +25,10 @@ class Oferta:
         if self.preco and self.preco_original and self.preco_original > self.preco:
             return round(100 * (1 - self.preco / self.preco_original))
         return None
+
+    @property
+    def poupanca(self) -> float:
+        """Economia em reais (0 quando não há preço original para comparar)."""
+        if self.preco and self.preco_original and self.preco_original > self.preco:
+            return round(self.preco_original - self.preco, 2)
+        return 0.0

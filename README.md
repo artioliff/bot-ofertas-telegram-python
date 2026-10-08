@@ -94,6 +94,13 @@ Cole um link de produto no privado do bot para testar, ou espere o primeiro cicl
 ## Ajustes — `config.yaml`
 Intervalo entre ciclos, quantos posts por vez, desconto mínimo, horário ativo e o **escopo do canal**. Por padrão o bot pega **ofertas de todas as categorias**. Para focar num nicho (tecnologia, moda, casa, pet…), preencha as listas de `categorias`/`departamentos`/`buscas` no `config.yaml` — há exemplos comentados dentro do arquivo. Edite e **reinicie o bot** (ele só lê a configuração ao iniciar).
 
+Filtros de curadoria (todos com exemplos comentados no próprio arquivo):
+- `max_posts_por_dia` — teto de posts por dia somando todos os ciclos (0 = sem limite);
+- `desconto_minimo_reais` — exige economia mínima em R$ (além do `%`), para não encher o canal de barbadinhas;
+- `ordenar_por` — como eleger as melhores ofertas: `desconto` (%) ou `poupanca` (R$ economizados);
+- `dedupe_titulos` — pula variações do mesmo produto (títulos muito parecidos) já postadas na janela de `dedupe_titulos_dias`;
+- `divulgar_afiliado` — acrescenta o aviso de link de afiliado no fim de cada post (exigência dos programas de afiliado).
+
 ## Deixar rodando sozinho
 - O bot posta enquanto a janela estiver aberta e o PC ligado. O `run.bat` reinicia sozinho se cair.
 - `horario_ativo` no `config.yaml` evita posts de madrugada (padrão 08:00–23:00).
@@ -131,3 +138,5 @@ ofertas/
 ├── config.py          # lê .env + config.yaml
 └── sources/           # mercadolivre.py, shopee.py, amazon.py
 ```
+
+Na raiz do projeto ficam ainda `tests/` (testes automáticos — `uv run pytest`) e `docs/` (análise e planos de melhoria).

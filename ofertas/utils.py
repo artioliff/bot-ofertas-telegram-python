@@ -31,3 +31,9 @@ def parse_preco_br(texto: str | None) -> float | None:
 
 def extrair_urls(texto: str | None) -> list[str]:
     return re.findall(r"https?://\S+", texto or "")
+
+
+def chave_similar(titulo: str) -> str:
+    """Chave de similaridade: variações do mesmo produto (cor, tamanho)
+    costumam repetir as primeiras palavras do título."""
+    return " ".join(re.findall(r"\w+", titulo.lower())[:5])

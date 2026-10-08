@@ -45,11 +45,17 @@ class Config:
         # config.yaml
         self.intervalo_minutos: int = int(geral.get("intervalo_minutos", 45))
         self.max_posts_por_ciclo: int = int(geral.get("max_posts_por_ciclo", 3))
+        self.max_posts_por_dia: int = int(geral.get("max_posts_por_dia", 0) or 0)
         self.espacamento_segundos: int = int(geral.get("espacamento_segundos", 120))
         self.nao_repetir_dias: int = int(geral.get("nao_repetir_dias", 7))
         self.horario_ativo: str = str(geral.get("horario_ativo") or "").strip()  # "08:00-23:00"; vazio = 24h
+        self.divulgar_afiliado: bool = bool(geral.get("divulgar_afiliado", True))
 
         self.desconto_minimo: int = int(filtros.get("desconto_minimo", 0))
+        self.desconto_minimo_reais: float = float(filtros.get("desconto_minimo_reais", 0) or 0)
+        self.ordenar_por: str = str(filtros.get("ordenar_por", "desconto")).strip().lower()
+        self.dedupe_titulos: bool = bool(filtros.get("dedupe_titulos", True))
+        self.dedupe_titulos_dias: int = int(filtros.get("dedupe_titulos_dias", 3) or 3)
         self.preco_minimo: float = float(filtros.get("preco_minimo", 0))
         self.preco_maximo: float = float(filtros.get("preco_maximo", 0))
         self.palavras_bloqueadas: list[str] = [

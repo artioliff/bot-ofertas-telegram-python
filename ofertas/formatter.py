@@ -1,6 +1,10 @@
 from html import escape
 
+from .config import config
 from .models import Oferta
+
+_AVISO_AFILIADO = ("<i>📌 Link de afiliado — pode gerar comissão pela indicação, "
+                   "sem custo extra pra você.</i>")
 
 _PLATAFORMA = {
     "mercadolivre": "💛 Mercado Livre",
@@ -28,4 +32,6 @@ def montar_caption(o: Oferta) -> str:
         linhas.append(escape(o.extra))
 
     linhas += ["", _PLATAFORMA.get(o.plataforma, o.plataforma)]
+    if config.divulgar_afiliado:
+        linhas += ["", _AVISO_AFILIADO]
     return "\n".join(linhas)
